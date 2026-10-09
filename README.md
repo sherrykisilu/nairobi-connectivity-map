@@ -1,32 +1,44 @@
-# React + TypeScript + Vite
+# Nairobi Connectivity Map
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+An interactive map of mobile internet speeds across Nairobi, built from
+[Ookla's open Speedtest data](https://github.com/teamookla/ookla-open-data).
+Matatu routes are coming next, to show connectivity along commuter routes.
 
-Currently, two official plugins are available:
+**Stack:** React 19, TypeScript (strict), Vite, Redux Toolkit, MUI, Mapbox GL JS.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- Ookla tiles for Nairobi, coloured by average download speed.
+- Filters for speed class and minimum tests per tile, held in a Redux slice and
+  applied to the map with Mapbox filter expressions.
+- Click a tile for download, upload, latency and test count.
+- The filter panel doubles as the legend and works with keyboard and screen readers.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## How the data is prepared
 
-## Expanding the Oxlint configuration
+Ookla publishes each quarter as a ~185 MB Parquet file sorted by
+[quadkey](https://learn.microsoft.com/en-us/bingmaps/articles/bing-maps-tile-system).
+[`scripts/fetch-ookla.mjs`](scripts/fetch-ookla.mjs) works out which zoom-16
+quadkeys cover Nairobi, uses the row-group statistics to find the one row group
+that can contain them, and reads only that row group and the needed columns over
+HTTP range requests. The result is a 400 KB GeoJSON file with about 1,400 tiles.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+node scripts/fetch-ookla.mjs mobile 2026 2
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Run it
+
+```bash
+npm install
+cp .env.example .env.local   # then add your public Mapbox token
+npm run dev
+```
+
+## Data licence
+
+Speedtest® by Ookla® Global Fixed and Mobile Network Performance Maps. Based on
+analysis by Ookla of Speedtest Intelligence® data for Q2 2026. Provided by Ookla
+and accessed 9 October 2026. Ookla trademarks used under license and reprinted
+with permission. The data in `public/data/` is licensed under
+[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
