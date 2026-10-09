@@ -1,4 +1,4 @@
-import type { FillLayerSpecification } from 'mapbox-gl'
+import type { FilterSpecification, FillLayerSpecification } from 'mapbox-gl'
 
 // One Ookla tile (about 600 m square) as written by scripts/fetch-ookla.mjs.
 export type SpeedTileProperties = {
@@ -42,4 +42,22 @@ export const speedFillLayer: FillLayerSpecification = {
     ],
     'fill-opacity': 0.75,
   },
+}
+
+// Which SPEED_CLASSES index a tile falls in, as a Mapbox expression.
+const speedClassIndex = [
+  'step',
+  ['get', 'downloadMbps'],
+  0,
+  ...SPEED_CLASSES.slice(1).flatMap((c, i) => [c.minMbps, i + 1]),
+]
+
+// Turns the filter settings into a Mapbox filter for the speed layer.
+// Kept as a pure function so it is easy to unit test.
+export function buildSpeedFilter(speedClasses: number[], minTests: number): FilterSpecification {
+  return [
+    'all',
+    ['>=', ['get', 'tests'], minTests],
+    ['in', speedClassIndex, ['literal', speedClasses]],
+  ] as FilterSpecification
 }

@@ -9,7 +9,11 @@ body {
   font-family: system-ui, sans-serif;
 }
 
-.app,
+.app {
+  position: relative;
+  height: 100%;
+}
+
 .map {
   height: 100%;
 }

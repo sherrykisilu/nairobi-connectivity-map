@@ -1,13 +1,15 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import {
+  buildSpeedFilter,
   SPEED_ATTRIBUTION,
   SPEED_DATA_URL,
   SPEED_SOURCE_ID,
   speedFillLayer,
   type SpeedTileProperties,
 } from './speedLayer'
+import { useAppSelector } from '../store/store'
 
 // Nairobi CBD, as [longitude, latitude] (Mapbox puts longitude first).
 export const NAIROBI_CENTER: [number, number] = [36.8219, -1.2921]
@@ -15,6 +17,8 @@ export const NAIROBI_CENTER: [number, number] = [36.8219, -1.2921]
 export function NairobiMap() {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
+  const [layersReady, setLayersReady] = useState(false)
+  const filters = useAppSelector((state) => state.filters)
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -38,6 +42,7 @@ export function NairobiMap() {
       // Insert below the first label layer so street names stay readable.
       const firstLabel = map.getStyle().layers.find((l) => l.type === 'symbol')?.id
       map.addLayer(speedFillLayer, firstLabel)
+      setLayersReady(true)
     })
 
     map.on('click', speedFillLayer.id, (event) => {
@@ -58,8 +63,17 @@ export function NairobiMap() {
     return () => {
       map.remove()
       mapRef.current = null
+      setLayersReady(false)
     }
   }, [])
+
+  // Apply the Redux filter settings to the map whenever they change.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !layersReady) return
+    map.setLayoutProperty(speedFillLayer.id, 'visibility', filters.showSpeed ? 'visible' : 'none')
+    map.setFilter(speedFillLayer.id, buildSpeedFilter(filters.speedClasses, filters.minTests))
+  }, [layersReady, filters])
 
   return (
     <div
